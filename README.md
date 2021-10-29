@@ -1,0 +1,2 @@
+# okos_ontozorendszer
+Szakdolgozathoz
