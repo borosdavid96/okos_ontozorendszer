@@ -1,2 +1,3 @@
 # okos_ontozorendszer
-Szakdolgozathoz
+Szakdolgozathoz készült
+
