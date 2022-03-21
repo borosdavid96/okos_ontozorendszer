@@ -17,3 +17,9 @@ DHT dht(DHTPIN, DHTTYPE);
 #include "DallasTemperature.h"
 OneWire oneWire(22);
 DallasTemperature tempSensor(&oneWire);
+
+//relék
+#define relay1 5
+#define relay2 18
+#define relay3 26
+#define relay4 27

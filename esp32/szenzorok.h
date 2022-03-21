@@ -22,27 +22,28 @@ return 1;
   Serial.println("°C ");
 }
 
-//foldhom
+//foldhom beolvasas , kiiras
  float fold_hom (){
  tempSensor.requestTemperaturesByIndex(0);
  float fold = tempSensor.getTempCByIndex(0);
  return fold;
  }
+
  void fold_kiir (float data){
 
 std::cout<<"Föld homerseklet: "<< data << " C" << std::endl;
 
 }
 
-//soilmoisture
+//soilmoisture beolvasas , kiiras
 int foldnedv_olvas(){
   
  int sensorValue = analogRead(SensorPin);
  return  sensorValue; 
 }
 
-int szazalekosit(int adat){
-int soilmoisturepercent = map(adat, AirValue, WaterValue, 0, 100); //map tartományt alakít át, 1. a mért érték, 2. tól,3. ig,4. a tól megfeleleője,5 az ig-megfeleleője 
+int szazalekosit(int adat){                                         // az érték visszaadás jó-e ? Foglalni kéne neki memóriát mivel ha scoopon kívül kerül megszűnik a soilmoisturepercent
+int soilmoisturepercent = map(adat, AirValue, WaterValue, 0, 100); //a map tartományt alakít át, 1. a mért érték, 2. tól,3. ig,4. a tól megfelelője,5 az ig-megfeleleője 
 if(soilmoisturepercent > 100)//ha több mint 100 akkor 100%
   {
    soilmoisturepercent=100;
