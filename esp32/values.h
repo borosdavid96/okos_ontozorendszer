@@ -17,3 +17,20 @@ DHT dht(DHTPIN, DHTTYPE);
 #include "DallasTemperature.h"
 OneWire oneWire(22);
 DallasTemperature tempSensor(&oneWire);
+
+//relék
+#define relay1 5
+#define relay2 18
+#define relay3 26
+#define relay4 27
+
+/****************************************
+       Konstansok
+ ****************************************/
+
+const char *UBIDOTS_TOKEN = "BBFF-l9otOKSgN1ghRt6IR5EIVsfHqlOVIv";            // Put here your Ubidots TOKEN
+const char *WIFI_SSID = "BorosD";           // Put here your Wi-Fi SSID
+const char *WIFI_PASS = "borosdavid";       // Put here your Wi-Fi password
+const char *DEVICE2 = "b4e62d04cda2"; // Assig the device label
+const char *DEVICE1 = "esp1"; // Assig the device label
+const int REFRESH_INTERVAL = 25000; // Update rate in milliseconds
