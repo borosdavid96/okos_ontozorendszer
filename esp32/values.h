@@ -34,3 +34,9 @@ const char *WIFI_PASS = "borosdavid";       // Put here your Wi-Fi password
 const char *DEVICE2 = "b4e62d04cda2"; // Assig the device label
 const char *DEVICE1 = "esp1"; // Assig the device label
 const int REFRESH_INTERVAL = 25000; // Update rate in milliseconds
+Ubidots ubidots(UBIDOTS_TOKEN);
+
+#define uS_TO_M 60000000  //Conversion micro seconds to seconds
+#define DEBUG false
+
+int uresfutas_szamlalo = 0;

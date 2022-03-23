@@ -7,8 +7,7 @@
 #include "values.h"
 #include "szenzorok.h"
 
-#define uS_TO_M 60000000  //Conversion micro seconds to seconds
-#define DEBUG false
+
 
 /****************************************
        Változók
@@ -18,63 +17,15 @@ Szenzorok proba;
 
 unsigned long lastRefreshTime = 0;
 
-
-int uresfutas_szamlalo = 0;
-
-int alvas = 0;
-
-
 int kapcs = 0;
 int value = 0;
-
-
 
 /****************************************
         Függvények
  ****************************************/
-void sleep () {
-  //Set sleep timer to x seconds
-  delay(1000);
-  alvas = 1;
-  ubidots.add("adat", alvas); //1 küldése hogy a második mikrokontroller aludjon
-  ubidots.publish("esp1");
-  delay(5000);
-  alvas = 0;
-  ubidots.add("adat", alvas); //0 küldése utána ha esetleg előbb ébredne fel a második ne aludjon az újbóli lekérdezése miatt
-  ubidots.publish("esp1");
-  esp_sleep_enable_timer_wakeup(proba.beolvas.sleep_time * uS_TO_M);
-  Serial.println(" ESP32 going to sleep for " + String(proba.beolvas.sleep_time) +
-                 " Minutes");
-  esp_deep_sleep_start();  //Go to sleep now
-}
 
-void subscribe_all() {
 
-  ubidots.subscribeLastValue(DEVICE1, "paratartalom"); // Insert the device and variable's Labels, respectively
-  ubidots.subscribeLastValue(DEVICE1, "pumpa");
-  ubidots.subscribeLastValue(DEVICE1, "homerseklet");
-  ubidots.subscribeLastValue(DEVICE2, "sleepingtime");
-  ubidots.subscribeLastValue(DEVICE2, "tartomany");
-  ubidots.subscribeLastValue(DEVICE2, "ontozesidotartam");
-}
-void relays_off (){
-  digitalWrite(relay1, HIGH); //fordított logika miatt magasra állítás (tehát kikapcsolt állapotban tartás
-  digitalWrite(relay2, HIGH);
-  digitalWrite(relay3, HIGH);
-  digitalWrite(relay4, HIGH);
-  }
 
-void ontoz() {
-  digitalWrite(relay1, LOW);
-  Serial.println("Ontozes inditasa.");
-  delay(proba.beolvas.ontozesidotartam * 1000); //lekérdezett idotartam
-  digitalWrite(relay1, HIGH);
-}
-
-void vilagitas() {
-  digitalWrite(relay2, LOW);
-  Serial.println("Lampa inditasa.");
-}
 
 int btof(byte * payload, unsigned int length) {
   char * buff = (char *) malloc(sizeof(char) * 10);
@@ -187,7 +138,7 @@ void setup()
   pinMode(relay2, OUTPUT); //relay
   pinMode(relay3, OUTPUT); //relay
   pinMode(relay4, OUTPUT); //relay
-  relays_off();
+  proba.relays_off();
 
   ubidots.setDebug(false);  // uncomment this to make debug messages available
   print_wakeup_reason();
@@ -195,7 +146,7 @@ void setup()
   ubidots.setCallback(callback);
   ubidots.setup();
   ubidots.reconnect();
-  subscribe_all();
+  proba.subscribe_all();
   dht.begin();
   tempSensor.begin();
   pinMode(BUTTON_PIN, INPUT_PULLUP);//pullup:inputnál nem szükséges ellenállás bekötése ahogy az esp8266-nál, ez a vízszint kapcsolóhoz kell
@@ -215,12 +166,7 @@ void setup()
 void loop()
 {
 
-  if (!ubidots.connected()) //ujracsatlakozas
-  {
-    relays_off();
-    ubidots.reconnect();
-    subscribe_all();
-  }
+ proba.ujracsatlakozas();
 
   if (labs(millis() - lastRefreshTime) >= REFRESH_INTERVAL) // abszolútértéke a kettő különbségének amíg kisebb mint a kijelölt időtartomány nem fog futni , triggers the routine every x seconds
   {
@@ -230,6 +176,8 @@ void loop()
     proba.update();
     proba.print();
     proba.vezerles();
+    proba.publikalas();
+    proba.inaktiv();
 
     /*
     //soil-be
@@ -309,21 +257,7 @@ void loop()
 
     }
     */
-    
-    if (beavatkozas[0] + beavatkozas[1] + beavatkozas[2] + beavatkozas[3] < 1) { // ha nem kellett beavatkozás számláló++
-      uresfutas_szamlalo += 1;
-      std::cout << "Üres futás " << uresfutas_szamlalo << " alkalommal" << std::endl;
-
-
-      if (uresfutas_szamlalo > 3) { //alvas ha x szer nincs semmi beavatkozás
-          sleep();
-        }
-
-      
-    }
-    else {
-      uresfutas_szamlalo = 0;
-    }
+   
 
     lastRefreshTime = millis(); //elmnetjük az időt hogy innen számoljuk
   }
