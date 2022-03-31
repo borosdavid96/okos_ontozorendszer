@@ -1,7 +1,5 @@
 
-
-
-struct struktura1 {
+struct struktura1 { //weblapról
    int pumpa;
    int homerseklet; //weblapos meghatározott hőmérséklet
    int paratartalom;
@@ -10,16 +8,13 @@ struct struktura1 {
    int sleep_time = 30;
 };
 
-
- struct struktura2 {
+ struct struktura2 { //szenzorból
 
   int soilmoisture_value;
   float fold_homerseklet;
   float dht_adat[2];
   int vizertek ;
 };
-
-
 
 
 class Szenzorok
@@ -81,7 +76,7 @@ bool Szenzorok::dht_beolvas()
 {
   szenzor.dht_adat[0] = dht.readHumidity();
   szenzor.dht_adat[1] = dht.readTemperature();
-  // Check if any reads isnt a number
+  // ha az érték nem szám
   if (isnan( szenzor.dht_adat[0]) || isnan( szenzor.dht_adat[1]))
   {
     Serial.println("Az adatbeolvasás a DHT szenzorból sikertelen volt!");
@@ -141,10 +136,8 @@ void Szenzorok::vizszint_olvas()
 }
 void Szenzorok::vizszint_kiir()
 {
-  // print out the button's state
   std::cout << "Vizérzékelő állása:" <<szenzor.vizertek << std::endl;
 }
-
 
 
 void Szenzorok::ujracsatlakozas(){
@@ -178,12 +171,12 @@ void Szenzorok::ontoz() {
 }
 void Szenzorok::ontoz_ki() {
   vizszint_olvas();
-  if(szenzor.vizertek && beavatkozas[0]==1){
+  if(szenzor.vizertek && beavatkozas[0]==true){
         std::cout << "Pumpa leáll mivel a vízszint túl alacsony!" << std::endl;
         digitalWrite(relay1, HIGH);
         beavatkozas[0] = false;
       }
-  else if(beavatkozas[0]==1 && (labs(millis() - lastRefreshTime2) >= beolvas.ontozesidotartam * 1000) ){
+  else if(beavatkozas[0]==true && (labs(millis() - lastRefreshTime2) >= beolvas.ontozesidotartam * 1000) ){
   digitalWrite(relay1, HIGH);
   std::cout << "Öntözés leáll." << std::endl;
    beavatkozas[0] = false;
@@ -261,11 +254,10 @@ void Szenzorok::vezerles(){
 
       void Szenzorok::sleep () {
   //Set sleep timer to x seconds
-  delay(1000);
   alvas = 1;
   ubidots.add("adat", alvas); //1 küldése hogy a második mikrokontroller aludjon
   ubidots.publish(DEVICE1);
-  delay(5000);
+  delay(5000);//felhős oldal miatt kell mert nem érzékeli új adatnak mindig ha ennél gyorsabban küldöm
   alvas = 0;
   ubidots.add("adat", alvas); //0 küldése utána ha esetleg előbb ébredne fel a második ne aludjon az újbóli lekérdezése miatt
   ubidots.publish(DEVICE1);

@@ -38,9 +38,9 @@ int btof(byte * payload, unsigned int length) {
 void callback(char *topic, byte *payload, unsigned int length)
 {
  
-  value = btof(payload, length);
+  value = btof(payload,length);
 
-  Serial.print("Message arrived [");
+  Serial.print("Új adat:[");
   Serial.print(topic);
   Serial.print("]");
   for (int i = 0; i < length; i++)
@@ -53,32 +53,32 @@ void callback(char *topic, byte *payload, unsigned int length)
   if (!strcmp(topic, "/v2.0/devices/esp1/pumpa/lv")) {
     std::cout << "A lekérdezett pumpa értéke:" << value << std::endl;
     proba.beolvas.pumpa = value;
-    proba.lekerdezesek[0]=true;
+    if(!proba.lekerdezesek[0]) proba.lekerdezesek[0]=true;
   }
   else if (!strcmp(topic, "/v2.0/devices/esp1/homerseklet/lv")) {
     std::cout << "A lekérdezett alsó hőmérsékleti hatar:" << value << std::endl;
     proba.beolvas.homerseklet = value;
-    proba.lekerdezesek[1]=true;
+    if(!proba.lekerdezesek[1])proba.lekerdezesek[1]=true;
   }
   else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/tartomany/lv")) {
     std::cout << "A lekérdezett Tartomany:" << value << std::endl;
     proba.beolvas.Tartomany = value;
-    proba.lekerdezesek[2]=true;
+    if(!proba.lekerdezesek[2])proba.lekerdezesek[2]=true;
   }
   else if (!strcmp(topic, "/v2.0/devices/esp1/paratartalom/lv")) {
     std::cout << "A lekérdezett parasítási határérték:" << value << std::endl;
     proba.beolvas.paratartalom = value;
-    proba.lekerdezesek[3]=true;
+    if(!proba.lekerdezesek[3])proba.lekerdezesek[3]=true;
   }
   else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/ontozesidotartam/lv")) {
     std::cout << "A lekérdezett ontozesidotartam:" << value << std::endl;
     proba.beolvas.ontozesidotartam = value;
-    proba.lekerdezesek[4]=true;
+    if(!proba.lekerdezesek[4])proba.lekerdezesek[4]=true;
   }
   else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/sleepingtime/lv")) {
     std::cout << "A lekérdezett sleep_time:" << value << std::endl;
     proba.beolvas.sleep_time = value;
-    proba.lekerdezesek[5]=true;
+    if(!proba.lekerdezesek[5])proba.lekerdezesek[5]=true;
   }
 
 }
@@ -89,13 +89,13 @@ void print_wakeup_reason() {
 
   switch (wakeupreason)
   {
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP"); break;
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    
-    default : Serial.printf("Wakeup wasnt caused by deep sleep: %d\n", wakeupreason); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Felébredés timer miatt"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Felébredés érintés miatt"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Felébredés ULP miatt"); break;
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Felébredés külső jel miatt RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Felébredés külső jel miatt RTC_CNTL"); break;
+  
+    default : Serial.printf("A felébredés nem deepsleep miatt: %d\n", wakeupreason); break;
   }
 }
 /****************************************
@@ -104,7 +104,6 @@ void print_wakeup_reason() {
 
 void setup()
 {
-  // put your setup code here, to run once:
   Serial.begin(115200);
 
   pinMode(relay1, OUTPUT); //relay
@@ -113,7 +112,7 @@ void setup()
   pinMode(relay4, OUTPUT); //relay
   proba.relays_off();
 
-  ubidots.setDebug(false);  // uncomment this to make debug messages available
+  ubidots.setDebug(false);  //aktív állapotban debug üzeneteket ad
   print_wakeup_reason();
   ubidots.connectToWifi(WIFI_SSID, WIFI_PASS);
   ubidots.setCallback(callback);
@@ -128,7 +127,7 @@ void setup()
   std::cout << "Adatok lekérése." << std::endl;
   while(!proba.lekerdezesek[5]){
   ubidots.loop();// subcribe adatok lekérése
-  delay(200);
+  delay(100);
     }
   
   lastRefreshTime = millis();
