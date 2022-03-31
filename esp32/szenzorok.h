@@ -6,6 +6,8 @@ struct struktura1 { //weblapról
    int Tartomany = 0;
    int ontozesidotartam = 5;
    int sleep_time = 30;
+   bool ket_eszkoz_e;
+   bool szelloztetes;
 };
 
  struct struktura2 { //szenzorból
@@ -19,6 +21,7 @@ struct struktura1 { //weblapról
 
 class Szenzorok
 {
+ 
   bool dht_beolvas();
   void vizszint_olvas();
   void fold_hom();
@@ -31,18 +34,25 @@ class Szenzorok
   bool pub = 1; //publikáció kikapcsolása 0 , 1 publikálás
   int maximum_uresfutas=10;
   void sleep ();
-  void ontoz();
   
+  void idozito_reset(unsigned long );
   unsigned long lastRefreshTime2 = 0;
   int alvas = 0;
  
   bool beavatkozas[4];
   
 public:
+ Szenzorok(){
+    for(int i; i<sizeof(lekerdezesek);i++)
+    lekerdezesek[i]=false;
+    
+    }
 
   struktura1 beolvas;
   struktura2 szenzor;
-
+  
+  void ontoz();
+  void uzenetek_beolvasasa(char* topic,int value);
   void ujracsatlakozas();
   void relays_off();
   void subscribe_all();
@@ -51,7 +61,7 @@ public:
   void inaktiv();
   void ontoz_ki();
   int uresfutas_szamlalo = 0;
-  bool lekerdezesek[6];
+  bool lekerdezesek[9];
 
 
   
@@ -61,6 +71,7 @@ public:
      foldnedv_olvas();
      vizszint_olvas();
   }
+  
   void print()
   {
     dht_kiir();
@@ -68,6 +79,7 @@ public:
     soilmoisture_print();
     vizszint_kiir();
   }
+ 
         
 };
 
@@ -161,12 +173,22 @@ void Szenzorok::subscribe_all(){
   ubidots.subscribeLastValue(DEVICE2, "tartomany");
   ubidots.subscribeLastValue(DEVICE1, "paratartalom"); 
   ubidots.subscribeLastValue(DEVICE2, "ontozesidotartam");
-  ubidots.subscribeLastValue(DEVICE2, "sleepingtime");
+  ubidots.subscribeLastValue(DEVICE2, "alvasi_ido");
+  ubidots.subscribeLastValue(DEVICE2, "ket_eszkoz_e");
+  ubidots.subscribeLastValue(DEVICE1, "szelloztetes");
+  
 }
 void Szenzorok::ontoz() {
-  digitalWrite(relay1, LOW);
-  Serial.println("Ontozes megy.");
- lastRefreshTime2=millis();
+  if ((szenzor.soilmoisture_value < beolvas.pumpa) && !szenzor.vizertek) { //x másodpercenként öntöz egyszer x ideig
+      beavatkozas[0] = true;
+      digitalWrite(relay1, LOW);
+      Serial.println("Ontozes megy.");
+      lastRefreshTime2=millis();
+    }
+    else if (szenzor.vizertek){
+      std::cout << "Öntözés szükséges viszont nem lehetséges mivel nincs elég víz." << std::endl;
+      }
+ 
 
 }
 void Szenzorok::ontoz_ki() {
@@ -180,18 +202,12 @@ void Szenzorok::ontoz_ki() {
   digitalWrite(relay1, HIGH);
   std::cout << "Öntözés leáll." << std::endl;
    beavatkozas[0] = false;
-}
+  }
 }
 void Szenzorok::vezerles(){
    //vezérlés 
-    if ((szenzor.soilmoisture_value < beolvas.pumpa) && !szenzor.vizertek) { //x másodpercenként öntöz egyszer x ideig
-      beavatkozas[0] = true;
-      ontoz();
-    }
-    else if (szenzor.vizertek){
-      std::cout << "Öntözés szükséges viszont nem lehetséges mivel nincs elég víz." << std::endl;
-      }
- 
+   ontoz();
+  
     if ( szenzor.dht_adat[1] < beolvas.homerseklet) { //addig világít amíg x másodperces mintavételezéssel jó nem lesz
       beavatkozas[1] = true;
         digitalWrite(relay2, LOW);
@@ -212,15 +228,19 @@ void Szenzorok::vezerles(){
       digitalWrite(relay3, HIGH);
       std::cout << "Parasítás leáll." << std::endl;
     }
-    if (float(beolvas.homerseklet + beolvas.Tartomany) <=  szenzor.dht_adat[1]) {
+     if (float(beolvas.homerseklet + beolvas.Tartomany) <=  szenzor.dht_adat[1]) {
       beavatkozas[3] = true;
-      //digitalWrite(relay4,LOW); //akkor kell csak ha a második nincs
       std::cout << "Hűtés megy." << std::endl;
+      if(!beolvas.ket_eszkoz_e) {
+        digitalWrite(relay4,LOW);} //akkor kell csak ha a második nincs
     }
+
     else if(beavatkozas[3] == true) {
       beavatkozas[3] = false;
       std::cout << "Hűtés leáll." << std::endl;
-      //digitalWrite(relay4,HIGH); //akkor kell csak ha a második eszköz nincs
+        if(!beolvas.ket_eszkoz_e){
+      digitalWrite(relay4,HIGH); //akkor kell csak ha a második eszköz nincs
+        }
     }
   }
   void Szenzorok::publikalas(){
@@ -266,3 +286,48 @@ void Szenzorok::vezerles(){
                  " Minutes");
   esp_deep_sleep_start();  //Go to sleep now
 }
+void Szenzorok::uzenetek_beolvasasa(char* topic,int value){
+if (!strcmp(topic, "/v2.0/devices/esp1/pumpa/lv")) {
+    std::cout << "A lekérdezett pumpa értéke:" << value << std::endl;
+    beolvas.pumpa = value;
+    lekerdezesek[0]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/esp1/homerseklet/lv")) {
+    std::cout << "A lekérdezett alsó hőmérsékleti hatar:" << value << std::endl;
+    beolvas.homerseklet = value;
+    lekerdezesek[1]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/tartomany/lv")) {
+    std::cout << "A lekérdezett Tartomany:" << value << std::endl;
+    beolvas.Tartomany = value;
+    lekerdezesek[2]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/esp1/paratartalom/lv")) {
+    std::cout << "A lekérdezett parasítási határérték:" << value << std::endl;
+    beolvas.paratartalom = value;
+    lekerdezesek[3]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/ontozesidotartam/lv")) {
+    std::cout << "A lekérdezett ontozesidotartam:" << value << std::endl;
+    beolvas.ontozesidotartam = value;
+  lekerdezesek[4]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/alvasi_ido/lv")) {
+    std::cout << "A lekérdezett alvasi_ido:" << value << std::endl;
+    beolvas.sleep_time = value;
+  lekerdezesek[5]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/ket_eszkoz_e/lv")) {
+    std::cout << "A lekérdezett ket_eszkoz_e:" << value << std::endl;
+    beolvas.ket_eszkoz_e = value;
+    lekerdezesek[6]=true;
+  }
+  else if (!strcmp(topic, "/v2.0/devices/esp1/szelloztetes/lv")) {
+    std::cout << "A lekérdezett szelloztetes:" << value << std::endl;
+    beolvas.szelloztetes = value;
+    lekerdezesek[7]=true;
+  }
+}
+void Szenzorok::idozito_reset(unsigned long x ){
+  x=millis();
+  }

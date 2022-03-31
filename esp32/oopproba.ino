@@ -50,37 +50,8 @@ void callback(char *topic, byte *payload, unsigned int length)
   Serial.println();
   std::cout << topic << std::endl;
 
-  if (!strcmp(topic, "/v2.0/devices/esp1/pumpa/lv")) {
-    std::cout << "A lekérdezett pumpa értéke:" << value << std::endl;
-    proba.beolvas.pumpa = value;
-    if(!proba.lekerdezesek[0]) proba.lekerdezesek[0]=true;
-  }
-  else if (!strcmp(topic, "/v2.0/devices/esp1/homerseklet/lv")) {
-    std::cout << "A lekérdezett alsó hőmérsékleti hatar:" << value << std::endl;
-    proba.beolvas.homerseklet = value;
-    if(!proba.lekerdezesek[1])proba.lekerdezesek[1]=true;
-  }
-  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/tartomany/lv")) {
-    std::cout << "A lekérdezett Tartomany:" << value << std::endl;
-    proba.beolvas.Tartomany = value;
-    if(!proba.lekerdezesek[2])proba.lekerdezesek[2]=true;
-  }
-  else if (!strcmp(topic, "/v2.0/devices/esp1/paratartalom/lv")) {
-    std::cout << "A lekérdezett parasítási határérték:" << value << std::endl;
-    proba.beolvas.paratartalom = value;
-    if(!proba.lekerdezesek[3])proba.lekerdezesek[3]=true;
-  }
-  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/ontozesidotartam/lv")) {
-    std::cout << "A lekérdezett ontozesidotartam:" << value << std::endl;
-    proba.beolvas.ontozesidotartam = value;
-    if(!proba.lekerdezesek[4])proba.lekerdezesek[4]=true;
-  }
-  else if (!strcmp(topic, "/v2.0/devices/b4e62d04cda2/sleepingtime/lv")) {
-    std::cout << "A lekérdezett sleep_time:" << value << std::endl;
-    proba.beolvas.sleep_time = value;
-    if(!proba.lekerdezesek[5])proba.lekerdezesek[5]=true;
-  }
-
+  proba.uzenetek_beolvasasa(topic,value);
+  
 }
 void print_wakeup_reason() {
 
@@ -122,7 +93,6 @@ void setup()
   dht.begin();
   tempSensor.begin();
   pinMode(BUTTON_PIN, INPUT_PULLUP);//pullup:inputnál nem szükséges ellenállás bekötése ahogy az esp8266-nál, ez a vízszint kapcsolóhoz kell
-  lastRefreshTime = millis();
   
   std::cout << "Adatok lekérése." << std::endl;
   while(!proba.lekerdezesek[5]){
@@ -139,6 +109,26 @@ void loop()
 
  proba.ujracsatlakozas();
 
+ if(proba.beolvas.szelloztetes){
+    if(!proba.beolvas.ket_eszkoz_e){
+        digitalWrite(relay4,LOW);}
+     
+   if(labs(millis() - lastRefreshTime) >= REFRESH_INTERVAL*6) // abszolútértéke a kettő különbségének amíg kisebb mint a kijelölt időtartomány nem fog futni , triggers the routine every x seconds
+  {
+    proba.update();
+    proba.print();
+    proba.ontoz();
+     std::cout << "Szellőztetés megy!" << std::endl;
+    lastRefreshTime = millis(); //elmnetjük az időt hogy innen számoljuk
+  }
+  if (labs(millis() - lastRefreshTime1) >= REFRESH_INTERVAL1*2) // triggers the routine every x seconds
+  {
+    proba.publikalas();  
+    lastRefreshTime1 = millis(); //elmnetjük az időt hogy innen számoljuk
+  }
+  }
+
+  else {
   if (labs(millis() - lastRefreshTime) >= REFRESH_INTERVAL) // abszolútértéke a kettő különbségének amíg kisebb mint a kijelölt időtartomány nem fog futni , triggers the routine every x seconds
   {
     proba.update();
@@ -154,7 +144,7 @@ if (labs(millis() - lastRefreshTime1) >= REFRESH_INTERVAL1) // triggers the rout
     proba.publikalas();  
     lastRefreshTime1 = millis(); //elmnetjük az időt hogy innen számoljuk
   }
-  
+  }
   proba.ontoz_ki();
   ubidots.loop();// subcribe adatok lekérése
   delay (500);
