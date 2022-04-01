@@ -24,31 +24,18 @@ int value = 0;
 /****************************************
         Függvények
  ****************************************/
-
-int btof(byte * payload, unsigned int length) {
-  char * buff = (char *) malloc(sizeof(char) * 10);
-  for (int i = 0; i < length; i++) {
-    buff[i] = payload[i];
-  }
-  int value = atoi(buff);
-  free(buff);
-  return value;
-}
-
 void callback(char *topic, byte *payload, unsigned int length)
 {
- 
-  value = btof(payload,length);
-
-  Serial.print("Új adat:[");
+  char buff [3];
+  Serial.print("Üzenet jött [");
   Serial.print(topic);
-  Serial.print("]");
-  for (int i = 0; i < length; i++)
-  {
-    Serial.print((char)payload[i]);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    buff[i]=((char)payload[i]);
   }
+  value=atoi(buff);
   Serial.println();
-  std::cout << topic << std::endl;
+  std::cout <<"a payload tartalma:"<< buff << std::endl;
 
   proba.uzenetek_beolvasasa(topic,value);
   
@@ -81,7 +68,7 @@ void setup()
   pinMode(relay2, OUTPUT); //relay
   pinMode(relay3, OUTPUT); //relay
   pinMode(relay4, OUTPUT); //relay
-  proba.relays_off();
+  proba.relek_ki();
 
   ubidots.setDebug(false);  //aktív állapotban debug üzeneteket ad
   print_wakeup_reason();
@@ -94,11 +81,7 @@ void setup()
   tempSensor.begin();
   pinMode(BUTTON_PIN, INPUT_PULLUP);//pullup:inputnál nem szükséges ellenállás bekötése ahogy az esp8266-nál, ez a vízszint kapcsolóhoz kell
   
-  std::cout << "Adatok lekérése." << std::endl;
-  while(!proba.lekerdezesek[5]){
-  ubidots.loop();// subcribe adatok lekérése
-  delay(100);
-    }
+  proba.adat_lekeres_ellenorzes();
   
   lastRefreshTime = millis();
   lastRefreshTime1 = millis();
@@ -110,11 +93,13 @@ void loop()
  proba.ujracsatlakozas();
 
  if(proba.beolvas.szelloztetes){
+  proba.relek_ki_kiveve_ventillator();
     if(!proba.beolvas.ket_eszkoz_e){
-        digitalWrite(relay4,LOW);}
+        digitalWrite(relay4,LOW);
+        }
      
-   if(labs(millis() - lastRefreshTime) >= REFRESH_INTERVAL*6) // abszolútértéke a kettő különbségének amíg kisebb mint a kijelölt időtartomány nem fog futni , triggers the routine every x seconds
-  {
+    if(labs(millis() - lastRefreshTime) >= REFRESH_INTERVAL*6) // abszolútértéke a kettő különbségének amíg kisebb mint a kijelölt időtartomány nem fog futni , triggers the routine every x seconds
+    {
     proba.update();
     proba.print();
     proba.ontoz();
@@ -126,9 +111,9 @@ void loop()
     proba.publikalas();  
     lastRefreshTime1 = millis(); //elmnetjük az időt hogy innen számoljuk
   }
-  }
+ }
 
-  else {
+ else {
   if (labs(millis() - lastRefreshTime) >= REFRESH_INTERVAL) // abszolútértéke a kettő különbségének amíg kisebb mint a kijelölt időtartomány nem fog futni , triggers the routine every x seconds
   {
     proba.update();
@@ -139,13 +124,13 @@ void loop()
     lastRefreshTime = millis(); //elmnetjük az időt hogy innen számoljuk
   }
 
-if (labs(millis() - lastRefreshTime1) >= REFRESH_INTERVAL1) // triggers the routine every x seconds
+  if (labs(millis() - lastRefreshTime1) >= REFRESH_INTERVAL1) // triggers the routine every x seconds
   {
     proba.publikalas();  
     lastRefreshTime1 = millis(); //elmnetjük az időt hogy innen számoljuk
   }
-  }
-  proba.ontoz_ki();
-  ubidots.loop();// subcribe adatok lekérése
-  delay (500);
+ }
+ proba.ontoz_ki();
+ ubidots.loop();// subcribe adatok lekérése
+ delay (500);
 }

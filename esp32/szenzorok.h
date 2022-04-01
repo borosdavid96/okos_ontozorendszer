@@ -21,7 +21,7 @@ struct struktura1 { //weblapról
 
 class Szenzorok
 {
- 
+ int adatszam=7;
   bool dht_beolvas();
   void vizszint_olvas();
   void fold_hom();
@@ -35,7 +35,7 @@ class Szenzorok
   int maximum_uresfutas=10;
   void sleep ();
   
-  void idozito_reset(unsigned long );
+  void ido_reset(unsigned long );
   unsigned long lastRefreshTime2 = 0;
   int alvas = 0;
  
@@ -50,11 +50,12 @@ public:
 
   struktura1 beolvas;
   struktura2 szenzor;
-  
+  void relek_ki_kiveve_ventillator();
+  void adat_lekeres_ellenorzes();
   void ontoz();
   void uzenetek_beolvasasa(char* topic,int value);
   void ujracsatlakozas();
-  void relays_off();
+  void relek_ki();
   void subscribe_all();
   void vezerles();
   void publikalas();
@@ -155,18 +156,22 @@ void Szenzorok::vizszint_kiir()
 void Szenzorok::ujracsatlakozas(){
    if (!ubidots.connected()) //ujracsatlakozas
   {
-    relays_off();
+    relek_ki();
     ubidots.reconnect();
     subscribe_all();
   }
   }
-void Szenzorok::relays_off(){
+void Szenzorok::relek_ki(){
   digitalWrite(relay1, HIGH); //fordított logika miatt magasra állítás (tehát kikapcsolt állapotban tartás
   digitalWrite(relay2, HIGH);
   digitalWrite(relay3, HIGH);
   digitalWrite(relay4, HIGH);
 }
-
+void Szenzorok::relek_ki_kiveve_ventillator(){
+  digitalWrite(relay1, HIGH); //fordított logika miatt magasra állítás (tehát kikapcsolt állapotban tartás
+  digitalWrite(relay2, HIGH);
+  digitalWrite(relay3, HIGH);
+}
 void Szenzorok::subscribe_all(){
   ubidots.subscribeLastValue(DEVICE1, "pumpa");
   ubidots.subscribeLastValue(DEVICE1, "homerseklet");
@@ -272,15 +277,17 @@ void Szenzorok::vezerles(){
     }
       }
 
-      void Szenzorok::sleep () {
-  //Set sleep timer to x seconds
-  alvas = 1;
-  ubidots.add("adat", alvas); //1 küldése hogy a második mikrokontroller aludjon
-  ubidots.publish(DEVICE1);
-  delay(5000);//felhős oldal miatt kell mert nem érzékeli új adatnak mindig ha ennél gyorsabban küldöm
-  alvas = 0;
-  ubidots.add("adat", alvas); //0 küldése utána ha esetleg előbb ébredne fel a második ne aludjon az újbóli lekérdezése miatt
-  ubidots.publish(DEVICE1);
+      void Szenzorok::sleep () {//alvás
+  
+  if(beolvas.ket_eszkoz_e){
+    alvas = 1;
+    ubidots.add("adat", alvas); //1 küldése hogy a második mikrokontroller aludjon
+    ubidots.publish(DEVICE1);
+    delay(5000);//felhős oldal miatt kell mert nem érzékeli új adatnak mindig ha ennél gyorsabban küldöm
+    alvas = 0;
+    ubidots.add("adat", alvas); //0 küldése utána ha esetleg előbb ébredne fel a második ne aludjon az újbóli lekérdezése miatt
+    ubidots.publish(DEVICE1);
+    }
   esp_sleep_enable_timer_wakeup(beolvas.sleep_time * uS_TO_M);
   Serial.println(" ESP32 going to sleep for " + String(beolvas.sleep_time) +
                  " Minutes");
@@ -328,6 +335,14 @@ if (!strcmp(topic, "/v2.0/devices/esp1/pumpa/lv")) {
     lekerdezesek[7]=true;
   }
 }
-void Szenzorok::idozito_reset(unsigned long x ){
-  x=millis();
+
+void Szenzorok::adat_lekeres_ellenorzes(){
+  std::cout << "Adatok lekérése, ha nincs meg minden adat nem indul el a program!" << std::endl;
+  int i=0;
+  for(i=0;i<adatszam;i++){
+    while(!lekerdezesek[i]){
+      ubidots.loop();// subcribe adatok lekérése
+      delay(100);
   }
+ }
+}
