@@ -11,12 +11,12 @@
  ****************************************/
 #define relay1 5
 #define relay2 16
-#define uS_TO_M 60000000  //Conversion micro seconds to seconds
-#define WIFISSID "BorosD" // Put your WifiSSID here
-#define PASSWORD "borosdavid" // Put your wifi password here
-#define TOKEN "BBFF-l9otOKSgN1ghRt6IR5EIVsfHqlOVIv" // Put your Ubidots' TOKEN
-#define DEVICE2 "b4e62d04cda2" // Assig the device label
-#define DEVICE1 "esp1" // Assig the device label
+#define uS_TO_M 60000000  //micro seconds to seconds
+#define WIFISSID "BorosD" //  Wifi SSID 
+#define PASSWORD "borosdavid" // wifi password 
+#define TOKEN "BBFF-l9otOKSgN1ghRt6IR5EIVsfHqlOVIv" // Ubidots TOKEN
+#define DEVICE2 "b4e62d04cda2" // the device label
+#define DEVICE1 "esp1" // the device label
 #define MQTT_CLIENT_NAME "Ubidots" // MQTT client Name
 const unsigned long REFRESH_INTERVAL = 10000; // ms
 unsigned long lastRefreshTime = 0;
@@ -72,7 +72,7 @@ void const sub(const char* eszköz, const char* valtozo) {
   }
 void sleeping() {
   delay(5000); // hogy bevárja az első eszközt
-  std::cout << "Sleeping for " << sleepingtime << " minutes" << std::endl;
+  std::cout << "Az eszköz aludni fog " << sleepingtime << " percig." << std::endl;
   ESP.deepSleep(sleepingtime * uS_TO_M);
 }
 void adat_lekeres_ellenorzes(){
@@ -93,11 +93,9 @@ void relays_off(){
 
 void callback(char* topic, byte* payload, unsigned int length) {
  char buff [6];
-  Serial.print("Üzenet jött [");
-  Serial.print(topic);
-  Serial.print("] ");
+  std::cout << "Üzenet jött a [" << topic << "] topikról " << std::endl;
   for (int i = 0; i < length; i++) {
-    buff[i]=((char)payload[i]);
+    buff[i] = ((char)payload[i]);
   }
   value=atoi(buff);
   Serial.println();
@@ -208,7 +206,6 @@ if (ket_eszkoz_e){
     volt_e[0]=true;
       }
    
-      
     }
   else if(labs(millis() - lastRefreshTime >= REFRESH_INTERVAL)) // triggers the routine every x seconds  //abs helyett labs kellett
   {
